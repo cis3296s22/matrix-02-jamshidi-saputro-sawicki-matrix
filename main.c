@@ -1,106 +1,47 @@
-/**
- * Program to multiply a matrix times a vector using both
- * MPI to distribute the computation among nodes and OMP
- * to distribute the computation among threads.
-*/
-
-#include "mpi.h"
 #include <stdio.h>
 #include <stdlib.h>
+#include <sys/times.h>
 #include <time.h>
 
 #include "mat.h"
-#define min(x, y) ((x)<(y)?(x):(y))
+#include "mpi.h"
 
-int main(int argc, char* argv[])
-{
-    int nrows, ncols;
-    double *aa, *b, *c;
-    double *buffer, ans;
-    double *times;
-    double total_times;
-    int run_index;
-    int nruns;
-    int myid, master, numprocs;
-    double starttime, endtime;
-    MPI_Status status;
-    int i, j, numsent, sender;
-    int anstype, row;
+int main(int argc, char *argv[]) {
+	int matrix_size = 1;
+	double *matrixA, *matrixB, *outputMatrix;
+	struct timespec start, end;
 
-    srand(time(0));
-    MPI_Init(&argc, &argv);
-    MPI_Comm_size(MPI_COMM_WORLD, &numprocs);
-    MPI_Comm_rank(MPI_COMM_WORLD, &myid);
-    if (argc > 1) {
-        // get the number of runs provided by the user
-        nruns = atoi(argv[1]);
+	// Create output file or truncate it to length 0 if it exists
+	FILE *output_fp = fopen ("output.txt", "w+");
 
-        // put the original code inside of the for loop to allow it to run multiple times
-        for (int run_index = 1; run_index <= nruns; run_index++){ //
-            nrows = run_index;
-            ncols = nrows;
-            // aa = (double*)malloc(sizeof(double) * nrows * ncols);
-            b = (double*)malloc(sizeof(double) * ncols);
-            c = (double*)malloc(sizeof(double) * nrows);
-            buffer = (double*)malloc(sizeof(double) * ncols);
-            master = 0;
-            if (myid == master) {
-                // Master Code goes here
-                aa = gen_matrix(nrows, ncols);
-                starttime = MPI_Wtime();
-                numsent = 0;
-                MPI_Bcast(b, ncols, MPI_DOUBLE, master, MPI_COMM_WORLD);
-                for (i = 0; i < min(numprocs-1, nrows); i++) {
-                    for (j = 0; j < ncols; j++) {
-                        buffer[j] = aa[i * ncols + j];
-                    }
-                    MPI_Send(buffer, ncols, MPI_DOUBLE, i+1, i+1, MPI_COMM_WORLD);
-                    numsent++;
-                }
-                for (i = 0; i < nrows; i++) {
-                    MPI_Recv(&ans, 1, MPI_DOUBLE, MPI_ANY_SOURCE, MPI_ANY_TAG,
-                             MPI_COMM_WORLD, &status);
-                    sender = status.MPI_SOURCE;
-                    anstype = status.MPI_TAG;
-                    c[anstype-1] = ans;
-                    if (numsent < nrows) {
-                        for (j = 0; j < ncols; j++) {
-                            buffer[j] = aa[numsent*ncols + j];
-                        }
-                        MPI_Send(buffer, ncols, MPI_DOUBLE, sender, numsent+1,
-                                 MPI_COMM_WORLD);
-                        numsent++;
-                    } else {
-                        MPI_Send(MPI_BOTTOM, 0, MPI_DOUBLE, sender, 0, MPI_COMM_WORLD);
-                    }
-                }
-                endtime = MPI_Wtime();
-                printf("%f\n",(endtime - starttime));
-            }
-        } else {
-            // Slave Code goes here
-            MPI_Bcast(b, ncols, MPI_DOUBLE, master, MPI_COMM_WORLD);
-            if (myid <= nrows) {
-                while(1) {
-                    MPI_Recv(buffer, ncols, MPI_DOUBLE, master, MPI_ANY_TAG,
-                             MPI_COMM_WORLD, &status);
-                    if (status.MPI_TAG == 0){
-                        break;
-                    }
-                    row = status.MPI_TAG;
-                    ans = 0.0;
-#pragma omp parallel
-#pragma omp shared(ans) for reduction(+:ans)
-                    for (j = 0; j < ncols; j++) {
-                        ans += buffer[j] * b[j];
-                    }
-                    MPI_Send(&ans, 1, MPI_DOUBLE, master, row, MPI_COMM_WORLD);
-                }
-            }
-        }
-    } else {
-        fprintf(stderr, "Usage matrix_times_vector <size>\n");
-    }
-    MPI_Finalize();
-    return 0;
+	// Create header
+	fprintf(output_fp, "matrix_size,elapsed_time\n");
+
+	// Matrix size starts at 2
+	while (++matrix_size <= 1000) {
+		// Create matrix A, B and an empty output
+		matrixA = gen_matrix(matrix_size, matrix_size);
+		matrixB = gen_matrix(matrix_size, matrix_size);
+		outputMatrix = malloc(sizeof(double) * matrix_size * matrix_size);
+
+		clock_gettime(CLOCK_REALTIME, &start);
+		mmult(outputMatrix,
+			  matrixA, matrix_size, matrix_size,
+			  matrixB, matrix_size, matrix_size);
+		clock_gettime(CLOCK_REALTIME, &end);
+
+		double elapsed_time = (end.tv_sec - start.tv_sec) + 1.0e-9 * (end.tv_nsec - start.tv_nsec);
+
+		fprintf(output_fp, "%d,%f\n", matrix_size, elapsed_time);
+		printf("\nCompleted matrix size %d with time %f", matrix_size, elapsed_time);
+
+		// printf("\n%f", (end.tv_sec - start.tv_sec) + 1.0e-9 * (end.tv_nsec - start.tv_nsec));
+		// printf("\nDone matrix %d with approx %lds", matrix_size, deltaTime(&start, &end));
+		// printf("\nDone matrix %d with left = %ld and right = %ld with approx %ld", matrix_size, start.tv_nsec, end.tv_nsec, (end.tv_nsec-start.tv_nsec) / 1000000);
+	}
+
+	fclose(output_fp);
+	printf("\nDone!");
+
+	return 0;
 }
