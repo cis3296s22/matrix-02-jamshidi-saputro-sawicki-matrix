@@ -14,7 +14,6 @@
 
 int main(int argc, char* argv[])
 {
-    printf("hi alex2");
     int nrows, ncols;
     double *aa, *b, *c;
     double *buffer, ans;
@@ -33,45 +32,51 @@ int main(int argc, char* argv[])
     MPI_Comm_size(MPI_COMM_WORLD, &numprocs);
     MPI_Comm_rank(MPI_COMM_WORLD, &myid);
     if (argc > 1) {
-        nrows = atoi(argv[1]);
-        ncols = nrows;
-        // aa = (double*)malloc(sizeof(double) * nrows * ncols);
-        b = (double*)malloc(sizeof(double) * ncols);
-        c = (double*)malloc(sizeof(double) * nrows);
-        buffer = (double*)malloc(sizeof(double) * ncols);
-        master = 0;
-        if (myid == master) {
-            // Master Code goes here
-            aa = gen_matrix(nrows, ncols);
-            starttime = MPI_Wtime();
-            numsent = 0;
-            MPI_Bcast(b, ncols, MPI_DOUBLE, master, MPI_COMM_WORLD);
-            for (i = 0; i < min(numprocs-1, nrows); i++) {
-                for (j = 0; j < ncols; j++) {
-                    buffer[j] = aa[i * ncols + j];
-                }
-                MPI_Send(buffer, ncols, MPI_DOUBLE, i+1, i+1, MPI_COMM_WORLD);
-                numsent++;
-            }
-            for (i = 0; i < nrows; i++) {
-                MPI_Recv(&ans, 1, MPI_DOUBLE, MPI_ANY_SOURCE, MPI_ANY_TAG,
-                         MPI_COMM_WORLD, &status);
-                sender = status.MPI_SOURCE;
-                anstype = status.MPI_TAG;
-                c[anstype-1] = ans;
-                if (numsent < nrows) {
+        // get the number of runs provided by the user
+        nruns = atoi(argv[1]);
+
+        // put the original code inside of the for loop to allow it to run multiple times
+        for (int run_index = 1; run_index <= nruns; run_index++){ //
+            nrows = run_index;
+            ncols = nrows;
+            // aa = (double*)malloc(sizeof(double) * nrows * ncols);
+            b = (double*)malloc(sizeof(double) * ncols);
+            c = (double*)malloc(sizeof(double) * nrows);
+            buffer = (double*)malloc(sizeof(double) * ncols);
+            master = 0;
+            if (myid == master) {
+                // Master Code goes here
+                aa = gen_matrix(nrows, ncols);
+                starttime = MPI_Wtime();
+                numsent = 0;
+                MPI_Bcast(b, ncols, MPI_DOUBLE, master, MPI_COMM_WORLD);
+                for (i = 0; i < min(numprocs-1, nrows); i++) {
                     for (j = 0; j < ncols; j++) {
-                        buffer[j] = aa[numsent*ncols + j];
+                        buffer[j] = aa[i * ncols + j];
                     }
-                    MPI_Send(buffer, ncols, MPI_DOUBLE, sender, numsent+1,
-                             MPI_COMM_WORLD);
+                    MPI_Send(buffer, ncols, MPI_DOUBLE, i+1, i+1, MPI_COMM_WORLD);
                     numsent++;
-                } else {
-                    MPI_Send(MPI_BOTTOM, 0, MPI_DOUBLE, sender, 0, MPI_COMM_WORLD);
                 }
+                for (i = 0; i < nrows; i++) {
+                    MPI_Recv(&ans, 1, MPI_DOUBLE, MPI_ANY_SOURCE, MPI_ANY_TAG,
+                             MPI_COMM_WORLD, &status);
+                    sender = status.MPI_SOURCE;
+                    anstype = status.MPI_TAG;
+                    c[anstype-1] = ans;
+                    if (numsent < nrows) {
+                        for (j = 0; j < ncols; j++) {
+                            buffer[j] = aa[numsent*ncols + j];
+                        }
+                        MPI_Send(buffer, ncols, MPI_DOUBLE, sender, numsent+1,
+                                 MPI_COMM_WORLD);
+                        numsent++;
+                    } else {
+                        MPI_Send(MPI_BOTTOM, 0, MPI_DOUBLE, sender, 0, MPI_COMM_WORLD);
+                    }
+                }
+                endtime = MPI_Wtime();
+                printf("%f\n",(endtime - starttime));
             }
-            endtime = MPI_Wtime();
-            printf("%f\n",(endtime - starttime));
         } else {
             // Slave Code goes here
             MPI_Bcast(b, ncols, MPI_DOUBLE, master, MPI_COMM_WORLD);
