@@ -23,16 +23,21 @@ int main(int argc, char* argv[]) {
         b = gen_matrix(n, n);
         c1 = malloc(sizeof(double) * n * n);
         c2 = malloc(sizeof(double) * n * n);
+
+
         clock_gettime(CLOCK_REALTIME, &start);
         mmult(c1, a, n, n, b, n, n);
         clock_gettime(CLOCK_REALTIME, &end);
         times[0] = deltaTime(&start, &end);
-        printf("%d %f", n, times[0]);
+
+        printf("%d times[0]: %f", n, times[0]);
         clock_gettime(CLOCK_REALTIME, &start);
         mmult_omp(c2, a, n, n, b, n, n);
         clock_gettime(CLOCK_REALTIME, &end);
         times[1] = deltaTime(&start, &end);
-        printf(" %f", times[1]);
+
+
+        printf("times[1]: %f", times[1]);
         printf("\n");
         compare_matrices(c1, c2, n, n);
     } else {

@@ -3,10 +3,10 @@ PGMS=mmult_omp_timing matrix_times_vector hello test_mmult mxv_omp_mpi mmult_mpi
 all:	${PGMS}
 
 main:		mmult.o main.o mat.c
-	mpicc -o main -fopenmp -O3 mmult.o main.o mat.c
+	gcc -o main mmult.o main.o mat.c
 
 main.o:	main.c
-	mpicc -c -fopenmp -O3 main.c
+	gcc -c main.c
 
 mmult_mpi_omp:		mmult.o mmult_mpi_omp.o mat.c
 	mpicc -o mmult_mpi_omp -fopenmp -O3 mmult.o mmult_mpi_omp.o mat.c

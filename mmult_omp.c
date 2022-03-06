@@ -18,8 +18,6 @@ int mmult_omp(double *c,
 
   // Insert your code here
 
-  
+        return 0;
     }
-    return 0;
-}
 

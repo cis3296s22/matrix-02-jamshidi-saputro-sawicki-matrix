@@ -2,9 +2,9 @@
 #include <stdlib.h>
 #include <sys/times.h>
 #include <time.h>
-
+#include <string.h>
 #include "mat.h"
-#include "mpi.h"
+// #include "mpi.h"
 
 int main(int argc, char *argv[]) {
 	int matrix_size = 1;
@@ -17,8 +17,9 @@ int main(int argc, char *argv[]) {
 	// Create header
 	fprintf(output_fp, "matrix_size,elapsed_time\n");
 
+    // matrix_size = 20;
 	// Matrix size starts at 2
-	while (++matrix_size <= 1000) {
+	while (++matrix_size <= 300) {
 		// Create matrix A, B and an empty output
 		matrixA = gen_matrix(matrix_size, matrix_size);
 		matrixB = gen_matrix(matrix_size, matrix_size);
@@ -38,7 +39,10 @@ int main(int argc, char *argv[]) {
 		// printf("\n%f", (end.tv_sec - start.tv_sec) + 1.0e-9 * (end.tv_nsec - start.tv_nsec));
 		// printf("\nDone matrix %d with approx %lds", matrix_size, deltaTime(&start, &end));
 		// printf("\nDone matrix %d with left = %ld and right = %ld with approx %ld", matrix_size, start.tv_nsec, end.tv_nsec, (end.tv_nsec-start.tv_nsec) / 1000000);
-	}
+//	    memset(matrixA, 0, (sizeof(double) * matrix_size * matrix_size));
+//        memset(matrixB, 0, (sizeof(double) * matrix_size * matrix_size));
+//        memset(outputMatrix, 0, (sizeof(double) * matrix_size * matrix_size));
+    }
 
 	fclose(output_fp);
 	printf("\nDone!");
