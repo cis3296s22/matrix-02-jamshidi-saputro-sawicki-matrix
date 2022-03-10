@@ -1,8 +1,9 @@
 #include <stdio.h>
 #include <stdlib.h>
+#include <string.h>
 #include <sys/times.h>
 #include <time.h>
-#include <string.h>
+
 #include "mat.h"
 // #include "mpi.h"
 
@@ -12,7 +13,7 @@ int main(int argc, char *argv[]) {
 	struct timespec start, end;
 
 	// Create output file or truncate it to length 0 if it exists
-	FILE *output_fp = fopen ("output.txt", "w+");
+	FILE *output_fp = fopen("output.txt", "w+");
 
 	// Create header
 	fprintf(output_fp, "matrix_size,elapsed_time\n");
@@ -24,10 +25,11 @@ int main(int argc, char *argv[]) {
 		matrixB = gen_matrix(matrix_size, matrix_size);
 		outputMatrix = malloc(sizeof(double) * matrix_size * matrix_size);
 
+		//
 		clock_gettime(CLOCK_REALTIME, &start);
-		mmult(outputMatrix,
-			  matrixA, matrix_size, matrix_size,
-			  matrixB, matrix_size, matrix_size);
+		mmult_nonvectorized(outputMatrix,
+							matrixA, matrix_size, matrix_size,
+							matrixB, matrix_size, matrix_size);
 		clock_gettime(CLOCK_REALTIME, &end);
 
 		double elapsed_time = (end.tv_sec - start.tv_sec) + 1.0e-9 * (end.tv_nsec - start.tv_nsec);
@@ -37,7 +39,7 @@ int main(int argc, char *argv[]) {
 
 		free(matrixB);
 		free(outputMatrix);
-    }
+	}
 
 	fclose(output_fp);
 	printf("\nDone!");
