@@ -5,6 +5,9 @@ all:	${PGMS}
 main:		mmult.o main.o mat.c
 	gcc -o main mmult.o main.o mat.c
 
+#main_optimized:		mmult.o main.o mat.c
+#	gcc -o -O3 main mmult.o main.o mat.c
+
 main.o:	main.c
 	gcc -c main.c
 
