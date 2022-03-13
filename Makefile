@@ -17,6 +17,12 @@ mmult_mpi_omp:		mmult.o mmult_mpi_omp.o mat.c
 mmult_mpi_omp.o:	mmult_mpi_omp.c
 	mpicc -c -fopenmp -O3 mmult_mpi_omp.c
 
+mmult_mpi:		mmult_mpi.o mat.c mmult.o
+	mpicc -o mmult_mpi mmult_mpi.o mat.c mmult.o
+
+mmult_mpi.o:	mmult_mpi.c
+	mpicc -c mmult_mpi.c
+
 mmult_omp_timing:	mmult.o mmult_omp.o mmult_omp_timing.o mat.c
 	gcc -o mmult -fopenmp -O3 mmult.o mmult_omp.o mmult_omp_timing.o mat.c -o mmult_omp_timing
 
