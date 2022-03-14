@@ -1,3 +1,4 @@
+#include <stdio.h>
 #include "mat.h"
 
 int mmult_omp(double *c,

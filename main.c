@@ -7,15 +7,20 @@
 #include "mat.h"
 // #include "mpi.h"
 
-void getUserSettings(int* SIMD, int* IOFile){
+void getUserSettings(int* SIMD, int* IOFile, int* OMP){
 
     char str[100];
-    printf("Would you like to use SIMD? (y/n): ");
+    printf("Would you like to use:\n 1. SIMD\n 2. OMP\n 3. None\n");
     fgets(str, 100, stdin);
 
-    if (!strcmp(str, "y\n")){
+
+    if (!strcmp(str, "1\n")){
         *SIMD = 1;
     }
+    else if (!strcmp(str, "2\n")){
+        *OMP = 1;
+    }
+
 
     printf("Would you like to input your own matrices? (y/n): ");
     fgets(str, 100, stdin);
@@ -32,7 +37,7 @@ double* getUserMatrix(int matrix_size){
 
     fgets(str, 100, stdin);
     str[strcspn(str, "\n")] = 0;
-    double* matrix = read_matrix_from_file("a.txt");
+    double* matrix = read_matrix_from_file(str);
 
     print_matrix(matrix, matrix_size, matrix_size);
     printf("\n\n");
@@ -40,12 +45,14 @@ double* getUserMatrix(int matrix_size){
     return matrix;
 }
 
-int main(int argc, char *argv[]) { // need to ask for SIMD/non + input from matrices
+int main(int argc, char *argv[]) {
 
     int SIMD = 0;
+    int OMP = 0;
     int IOFile = 0;
 
-    getUserSettings(&SIMD, &IOFile);
+    getUserSettings(&SIMD, &IOFile, &OMP);
+
 
 	int matrix_size = 1;
 	double *matrixA, *matrixB, *outputMatrix;
@@ -75,17 +82,22 @@ int main(int argc, char *argv[]) { // need to ask for SIMD/non + input from matr
             mmult_vectorized(outputMatrix,matrixA, matrixB, matrix_size);
             clock_gettime(CLOCK_REALTIME, &end);
         }
-        else{
+        else if (OMP){
             clock_gettime(CLOCK_REALTIME, &start);
-            mmult_nonvectorized(outputMatrix,
-                                matrixA, matrix_size, matrix_size,
-                                matrixB, matrix_size, matrix_size);
+            mmult_omp(outputMatrix, matrixA, matrix_size, matrix_size, matrixB, matrix_size, matrix_size);
             clock_gettime(CLOCK_REALTIME, &end);
+        }
+        else{
+                clock_gettime(CLOCK_REALTIME, &start);
+                mmult_nonvectorized(outputMatrix,
+                                    matrixA, matrix_size, matrix_size,
+                                    matrixB, matrix_size, matrix_size);
+                clock_gettime(CLOCK_REALTIME, &end);
         }
         double elapsed_time = (end.tv_sec - start.tv_sec) + 1.0e-9 * (end.tv_nsec - start.tv_nsec);
 
         print_matrix(outputMatrix, matrix_size, matrix_size);
-        printf("\nsize,time:\n%d,%f\n", matrix_size, elapsed_time);
+        printf("c^\nsize,time:\n%d,%f\n", matrix_size, elapsed_time);
         return 0;
     }
 
@@ -103,6 +115,11 @@ int main(int argc, char *argv[]) { // need to ask for SIMD/non + input from matr
         if (SIMD){
             clock_gettime(CLOCK_REALTIME, &start);
             mmult_vectorized(outputMatrix,matrixA, matrixB, matrix_size);
+            clock_gettime(CLOCK_REALTIME, &end);
+        }
+        else if (OMP){
+            clock_gettime(CLOCK_REALTIME, &start);
+            mmult_omp(outputMatrix, matrixA, matrix_size, matrix_size, matrixB, matrix_size, matrix_size);
             clock_gettime(CLOCK_REALTIME, &end);
         }
         else{
