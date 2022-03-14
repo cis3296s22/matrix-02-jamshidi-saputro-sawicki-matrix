@@ -3,7 +3,7 @@
 #include <time.h>
 
 #include "mat.h"
-#include "mpi.h"
+#include "/usr/include/mpich/mpi.h"
 
 int main(int argc, char *argv[]) {
 	MPI_Status status;	// MPI Status container

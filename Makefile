@@ -1,9 +1,12 @@
-PGMS=mmult_omp_timing matrix_times_vector hello test_mmult mxv_omp_mpi mmult_mpi_omp main main_omp main_mpi
+PGMS=mmult_omp_timing matrix_times_vector hello test_mmult mxv_omp_mpi mmult_mpi_omp main main_unoptimized main_omp main_mpi
 
 all:	${PGMS}
 
 main:		mmult.o main.o mat.c mmult_omp.o
 	gcc -o main -fopenmp -O3 mmult.o mmult_omp.o main.o mat.c
+
+main_unoptimized:		mmult.o main.o mat.c mmult_omp.o
+	gcc -o main_unoptimized -fopenmp mmult.o mmult_omp.o main.o mat.c
 
 main_omp:		mmult_omp.o main.o mat.c
 	gcc -o main_omp -fopenmp -O3 mmult_omp.o main.o mat.c
