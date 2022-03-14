@@ -5,11 +5,20 @@ all:	${PGMS}
 main:		mmult.o main.o mat.c mmult_omp.o
 	gcc -o main -fopenmp -O3 mmult.o mmult_omp.o main.o mat.c
 
+main_omp:		mmult_omp.o main.o mat.c
+	gcc -o main_omp -fopenmp -O3 mmult_omp.o main.o mat.c
+
+main_mpi:		mat.o main_mpi.o mmult_omp.o
+	mpicc -o main_mpi -fopenmp -O3 main_mpi.o mmult_omp.o mat.o
+
 #main_optimized:		mmult.o main.o mat.c
 #	gcc -o -O3 main mmult.o main.o mat.c
 
 main.o:	main.c
 	gcc -c main.c
+
+main_mpi.o: main_mpi.c
+	mpicc -c -O3 main_mpi.c
 
 mmult_mpi_omp:		mmult.o mmult_mpi_omp.o mat.c
 	mpicc -o mmult_mpi_omp -fopenmp -O3 mmult.o mmult_mpi_omp.o mat.c
