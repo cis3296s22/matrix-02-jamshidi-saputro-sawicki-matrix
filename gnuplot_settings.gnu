@@ -7,5 +7,5 @@ set title 'Matrix Multiplication Speeds on TU Wolfgang Cluster'
 set xlabel 'Matrix Size'
 set ylabel 'Time (Seconds)'
 
-plot "O3_omp_1000.txt" using 1:2 title "OMP -O3" with linespoint, \
-	"omp_1000.txt" using 1:2 title "OMP" with linespoint
+plot "O3_omp_1000.txt" every 1 using 1:2 title "-O3 OMP" with linespoints, \
+	"omp_1000.txt" every 1 using 1:2 title "OMP" with linespoints
