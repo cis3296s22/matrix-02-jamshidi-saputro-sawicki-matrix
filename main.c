@@ -107,10 +107,11 @@ int main(int argc, char *argv[]) {
 		matrix_b = read_matrix_from_file(input_files[1]);
 		output_matrix = malloc(sizeof(double) * N * N);
 
-		printf("\nA %s:\n", input_files[0]);
+		printf("\n------------------ MAIN ------------------");
+		printf("\nMatrix %s:\n", input_files[0]);
 		print_matrix(matrix_a, N, N);
 
-		printf("\nB %s:\n", input_files[1]);
+		printf("\nMatrix %s:\n", input_files[1]);
 		print_matrix(matrix_b, N, N);
 
 		printf("\nRunning OMP...");
@@ -130,6 +131,8 @@ int main(int argc, char *argv[]) {
 		printf("\nRunning Unoptimized...");
 		if (UNOPTIMIZED) {
 			time_matrix(&UNOPTIMIZED, output_matrix, matrix_a, matrix_b, &N, start, end);
+			printf("\nResulting Matrix with Unoptimized:\n");
+			print_matrix(output_matrix, N, N);
 		}
 
 		free(matrix_a);
