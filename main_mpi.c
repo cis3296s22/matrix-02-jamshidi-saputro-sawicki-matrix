@@ -11,11 +11,11 @@ int min(int a, int b) {
 }
 
 void record_time(int *size, double elapsed_time, FILE *file) {
-	printf("\nTime given is: %f", elapsed_time);
+	// printf("\nOutput %f!", elapsed_time);
 	fprintf(file, "%d,\t%f\n", *size, elapsed_time);
 }
 
-double* MPIThingy(int *myid, double *matrixA, double *matrixB, int matrix_size, double *recv, double *buffer, int *numprocs, MPI_Status *status, FILE *file) {
+double *MPIThingy(int *myid, double *matrixA, double *matrixB, int matrix_size, double *recv, double *buffer, int *numprocs, MPI_Status *status, FILE *file) {
 	if (*myid == 0) {  // MASTER CODE
 		double starttime, endtime;
 
@@ -25,7 +25,7 @@ double* MPIThingy(int *myid, double *matrixA, double *matrixB, int matrix_size, 
 		// if (matrixB == NULL)
 		matrixB = gen_matrix(matrix_size, matrix_size);
 
-		double* outputMatrix = malloc(sizeof(double) * matrix_size * matrix_size);
+		double *outputMatrix = malloc(sizeof(double) * matrix_size * matrix_size);
 		recv = malloc(sizeof(double) * matrix_size);
 
 		int numsent = 0;
@@ -69,11 +69,11 @@ double* MPIThingy(int *myid, double *matrixA, double *matrixB, int matrix_size, 
 			}
 		}
 		endtime = MPI_Wtime();
-		printf("\ntime: %f", (endtime - starttime));
+		// printf("\ntime: %f", (endtime - starttime));
 
 		if (endtime != 0 && file != NULL)
 			record_time(&matrix_size, endtime - starttime, file);
-            return outputMatrix;
+		return outputMatrix;
 		// return endtime - starttime;
 
 		// compareMatrix = malloc(sizeof(double) * matrix_size * matrix_size);
@@ -126,8 +126,8 @@ int main(int argc, char *argv[]) {
 	MPI_Comm_rank(MPI_COMM_WORLD, &myid);
 
 	if (argc > 1) {
-		if (argc > 2) {	 // We've been given files + an N
-			if (argc != 4) {
+		if (argc > 3) {	 // We've been given files + an N
+			if (argc > 5) {
 				fprintf(stderr, "\nUsage matrix_times_vector <size>\nUsage matrix_times_vector <filename> <filename> <size>");
 				exit(1);
 			}
@@ -143,7 +143,18 @@ int main(int argc, char *argv[]) {
 					}
 				}
 			}
+		} else {
+			for (int i = 1; i < argc; i++) {
+				if (strcmp(argv[i], "O3") == 0) {
+					OTHREE = 1;
+				} else {
+					MAX_N = atoi(argv[i]);
+				}
+			}
 		}
+
+		if (myid == 0)
+			printf("\nRunning MPI...");
 
 		// If the O3 argument is present, create the proper text file
 		if (OTHREE) {
@@ -160,25 +171,28 @@ int main(int argc, char *argv[]) {
 
 		if (cur_input_index != 0) {	 // ! If we were passed files, set
 			if (myid == 0) {
+				printf("\n--------------- MAIN MPI ----------------");
 				matrixA = read_matrix_from_file(input_files[0]);
 				matrixB = read_matrix_from_file(input_files[1]);
 
-				printf("\nMatrix A:\n");
+				printf("\nMatrix %s:\n", input_files[0]);
 				print_matrix(matrixA, matrix_size, matrix_size);
 
-				printf("\nMatrix B:\n");
+				printf("\nMatrix %s:\n", input_files[1]);
 				print_matrix(matrixB, matrix_size, matrix_size);
 			}
 
 			outputMatrix = MPIThingy(&myid, matrixA, matrixB, matrix_size, recv, buffer, &numprocs, &status, NULL);
 
 			if (myid == 0) {
-				 printf("\nOutput Matrix:\n");
-				 print_matrix(outputMatrix, matrix_size, matrix_size);
+				printf("\nOutput Matrix:\n");
+				print_matrix(outputMatrix, matrix_size, matrix_size);
 			}
 		} else {  // ! Generating files from 0 to MAX_N!
-			MAX_N = atoi(argv[1]);
+			// MAX_N = atoi(argv[1]);
 			while (++matrix_size <= MAX_N) {
+				if (myid == 0)
+					printf("\nCurrent matrix size is now %d", matrix_size);
 				buffer = malloc(sizeof(double) * matrix_size);
 
 				outputMatrix = MPIThingy(&myid, matrixA, matrixB, matrix_size, recv, buffer, &numprocs, &status, mpi_file);
@@ -191,6 +205,8 @@ int main(int argc, char *argv[]) {
 	}
 	MPI_Finalize();
 
-	fclose(mpi_file);
+	if (myid == 0)
+		fclose(mpi_file);
+
 	return 0;
 }
