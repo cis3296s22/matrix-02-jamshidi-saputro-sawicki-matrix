@@ -10,12 +10,21 @@ int min(int a, int b) {
 	return a > b ? b : a;
 }
 
-double MPIThingy(int *myid, double *matrixA, double *matrixB, double *outputMatrix, int matrix_size, double *recv, double *buffer, int *numprocs, MPI_Status *status) {
-	double starttime, endtime;
+void record_time(int *size, double elapsed_time, FILE *file) {
+	printf("\nTime given is: %f", elapsed_time);
+	fprintf(file, "%d,\t%f\n", *size, elapsed_time);
+}
 
+void MPIThingy(int *myid, double *matrixA, double *matrixB, double *outputMatrix, int matrix_size, double *recv, double *buffer, int *numprocs, MPI_Status *status, FILE *file) {
 	if (*myid == 0) {  // MASTER CODE
+		double starttime, endtime;
+
+		// if (matrixA == NULL)
 		matrixA = gen_matrix(matrix_size, matrix_size);
+
+		// if (matrixB == NULL)
 		matrixB = gen_matrix(matrix_size, matrix_size);
+
 		outputMatrix = malloc(sizeof(double) * matrix_size * matrix_size);
 		recv = malloc(sizeof(double) * matrix_size);
 
@@ -60,9 +69,11 @@ double MPIThingy(int *myid, double *matrixA, double *matrixB, double *outputMatr
 			}
 		}
 		endtime = MPI_Wtime();
+		printf("\ntime: %f", (endtime - starttime));
 
-		// printf("\ntime: %f", (endtime - starttime));
-		return endtime - starttime;
+		if (endtime != 0 && file != NULL)
+			record_time(&matrix_size, endtime - starttime, file);
+		// return endtime - starttime;
 
 		// compareMatrix = malloc(sizeof(double) * matrix_size * matrix_size);
 		// mmult_nonvectorized(compareMatrix, matrixA, matrix_size, matrix_size, matrixB, matrix_size, matrix_size);
@@ -97,11 +108,6 @@ double MPIThingy(int *myid, double *matrixA, double *matrixB, double *outputMatr
 	}
 }
 
-void record_time(int *size, double elapsed_time, FILE *file) {
-    printf("\nTime given is: %f", elapsed_time);
-	fprintf(file, "%d,\t%f\n", *size, elapsed_time);
-}
-
 int main(int argc, char *argv[]) {
 	int matrix_size = 1;  // nrows & ncols
 	double *matrixA, *matrixB, *outputMatrix, *compareMatrix, *buffer, *recv;
@@ -120,6 +126,11 @@ int main(int argc, char *argv[]) {
 
 	if (argc > 1) {
 		if (argc > 2) {	 // We've been given files + an N
+			if (argc != 4) {
+				fprintf(stderr, "\nUsage matrix_times_vector <size>\nUsage matrix_times_vector <filename> <filename> <size>");
+				exit(1);
+			}
+
 			for (int i = 1; i < argc; i++) {
 				if (strcmp(argv[i], "O3") == 0) {
 					OTHREE = 1;
@@ -147,18 +158,31 @@ int main(int argc, char *argv[]) {
 		fprintf(mpi_file, "matrix_size,\telapsed_time\n");
 
 		if (cur_input_index != 0) {	 // ! If we were passed files, set
+			if (myid == 0) {
+				matrixA = read_matrix_from_file(input_files[0]);
+				matrixB = read_matrix_from_file(input_files[1]);
 
-		} else {
+				printf("\nMatrix A:\n");
+				print_matrix(matrixA, matrix_size, matrix_size);
+
+				printf("\nMatrix B:\n");
+				print_matrix(matrixB, matrix_size, matrix_size);
+			}
+
+			MPIThingy(&myid, matrixA, matrixB, outputMatrix, matrix_size, recv, buffer, &numprocs, &status, NULL);
+
+			if (myid == 0) {
+				// printf("\nOutput Matrix:\n");
+				// print_matrix(outputMatrix, matrix_size, matrix_size);
+			}
+		} else {  // ! Generating files from 0 to MAX_N!
 			MAX_N = atoi(argv[1]);
 			while (++matrix_size <= MAX_N) {
 				buffer = malloc(sizeof(double) * matrix_size);
 
-				if (cur_input_index != 0) {	 // ! If we were passed files, set
+				MPIThingy(&myid, matrixA, matrixB, outputMatrix, matrix_size, recv, buffer, &numprocs, &status, mpi_file);
 
-				} else {  // ! Generating files from 0 to MAX_N!
-					record_time(&matrix_size, MPIThingy(&myid, matrixA, matrixB, outputMatrix, matrix_size, recv, buffer, &numprocs, &status), mpi_file);
-					// matrix_size = atoi(argv[1]);
-				}
+				// matrix_size = atoi(argv[1]);
 			}
 		}
 	} else {

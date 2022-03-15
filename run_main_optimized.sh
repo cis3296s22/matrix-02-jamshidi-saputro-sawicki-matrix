@@ -2,5 +2,5 @@
 make clean
 clear
 make main
-./main O3 MPI OMP SIMD UNOPTIMIZED
+./main O3 OMP SIMD UNOPTIMIZED
 gnuplot gnuplot_settings.gnu
