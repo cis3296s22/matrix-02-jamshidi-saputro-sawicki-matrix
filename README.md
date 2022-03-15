@@ -128,4 +128,4 @@ Syntax:
 	mpiexec -np 4 ./mmult_mpi 10
 
 # Comparison Graph
-![hello](out.png)
+![hello](comparison_graph.png)
