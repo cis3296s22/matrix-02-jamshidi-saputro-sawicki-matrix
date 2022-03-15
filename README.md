@@ -95,14 +95,20 @@ We wrote code to automate the generation of graphs for the different mmult algor
 The proportion of time and tasks dedicated to writing variations of mmult and testing/reporting the multiplication was about even. As we added more variations of mmult, we realized that we needed to change how we tested/reported the information and how to make it so that a user could choose any variation after compiling main.c and it would output the information from that variation, rather than making a user compile a file per variation. Therefore, there was a large amount of time dedicated to both aspects of the project.
 
 # Usage
-This project has two different programs:  
+This project has three different programs:  
 * main
-* main_mpi
+* main_mpi (flawed)
+* mmult_mpi
 
 Main MPI handles matrix multiplication using MPI while Main utilizes every other method (OMP, SIMD) for matrix multiplication
 
 Syntax:
 
+	make main
+	make main_mpi
+	make mmult_mpi
+	
+	main:
 	From [2,1000]
 	./main O3
 	./main O3 MPI
@@ -112,3 +118,11 @@ Syntax:
 	
 	With Two Files: ./main [matrix1] [matrix2] [matrix_size]
 	./main a.txt b.txt 5
+	
+	main_mpi:
+	mpiexec -np [number of nodes/processes you want to use] ./main_mpi [max_matrix_size]
+	mpiexec -np 4 ./main_mpi 1000
+	
+	mmult_mpi:
+	mpiexec -np [number of nodes/processes you want to use] ./main_mpi [matrix_size]
+	mpiexec -np 4 ./mmult_mpi 10
