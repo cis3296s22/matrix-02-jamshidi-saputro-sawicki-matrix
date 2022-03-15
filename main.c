@@ -114,12 +114,12 @@ int main(int argc, char *argv[]) {
 		printf("\nB %s:\n", input_files[1]);
 		print_matrix(matrix_b, N, N);
 
-		printf("\nRunning MPI...");
-		if (MPI) {
-			time_matrix(&MPI, output_matrix, matrix_a, matrix_b, &N, start, end);
-			printf("\nResulting Matrix with MPI:\n");
-			print_matrix(output_matrix, N, N);
-		}
+		// printf("\nRunning MPI...");
+		// if (MPI) {
+		// 	time_matrix(&MPI, output_matrix, matrix_a, matrix_b, &N, start, end);
+		// 	printf("\nResulting Matrix with MPI:\n");
+		// 	print_matrix(output_matrix, N, N);
+		// }
 
 		printf("\nRunning OMP...");
 		if (OMP) {
@@ -151,10 +151,10 @@ int main(int argc, char *argv[]) {
 
 			printf("\n\nCurrent matrix size is now %d", N);
 
-			printf("\nRunning MPI...");
-			if (MPI) {
-				record_time(&MPI, &N, time_matrix(&MPI, output_matrix, matrix_a, matrix_b, &N, start, end), mpi_file);
-			}
+			// printf("\nRunning MPI...");
+			// if (MPI) {
+			// 	record_time(&MPI, &N, time_matrix(&MPI, output_matrix, matrix_a, matrix_b, &N, start, end), mpi_file);
+			// }
 
 			printf("\nRunning OMP...");
 			if (OMP) {
@@ -306,7 +306,7 @@ int main(int argc, char *argv[]) {
  * @param N
  */
 void interpret_args(int argc, char *argv[], int *MPI, int *OMP, int *SIMD, int *UNOPTIMIZED, int *OTHREE, int *cur_input_index, char *input_files[], int *N) {
-	for (int i = 1; i < argc; ++i) {
+	for (int i = 1; i < argc; i++) {
 		// printf("\nargv[%d]: %s", i, argv[i]);
 
 		if (strcmp(argv[i], "MPI") == 0) {
