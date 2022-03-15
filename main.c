@@ -11,7 +11,7 @@
 
 // Function declarations
 double time_matrix(int *mode, double *output_matrix, double *matrix_a, double *matrix_b, int *N, struct timespec start, struct timespec end);
-void interpret_args(int argc, char *argv[], int *MPI, int *OMP, int *SIMD, int *UNOPTIMIZED, int *OTHREE, int *cur_input_index, char *input_files[], int *N);
+void interpret_args(int argc, char *argv[], int *OMP, int *SIMD, int *UNOPTIMIZED, int *OTHREE, int *cur_input_index, char *input_files[], int *N);
 
 // void getUserSettings(int* SIMD, int* IOFile, int* OMP) {
 // 	char str[100];
@@ -50,7 +50,6 @@ void record_time(int *mode, int *size, double elapsed_time, FILE *file) {
 }
 
 int main(int argc, char *argv[]) {
-	int MPI = 0;
 	int OMP = 0;
 	int SIMD = 0;
 	int UNOPTIMIZED = 0;
@@ -63,39 +62,35 @@ int main(int argc, char *argv[]) {
 	struct timespec start, end;
 
 	// Output files
-	char *mpi_filename, *omp_filename, *simd_filename, *unoptimized_filename;
-	FILE *mpi_file, *omp_file, *simd_file, *unoptimized_file;
+	char *omp_filename, *simd_filename, *unoptimized_filename;
+	FILE *omp_file, *simd_file, *unoptimized_file;
 
 	if (argc == 1) {
-		printf("You must enter arguments.  Options: O3, MPI, OMP, SIMD, UNOPTIMIZED, filea.txt, fileb.txt, N");
+		printf("You must enter arguments.  Options: O3, OMP, SIMD, UNOPTIMIZED, filea.txt, fileb.txt, N");
 	}
 
-	interpret_args(argc, argv, &MPI, &OMP, &SIMD, &UNOPTIMIZED, &OTHREE, &cur_input_index, input_files, &N);
+	interpret_args(argc, argv, &OMP, &SIMD, &UNOPTIMIZED, &OTHREE, &cur_input_index, input_files, &N);
 
 	// If the O3 argument is present
 	if (OTHREE) {
-		mpi_filename = "O3_mpi.txt";
 		omp_filename = "O3_omp.txt";
 		simd_filename = "O3_simd.txt";
-        unoptimized_filename = "03_unoptimized.txt";
+		unoptimized_filename = "03_unoptimized.txt";
 	} else {
-		mpi_filename = "mpi.txt";
 		omp_filename = "omp.txt";
 		simd_filename = "simd.txt";
-        unoptimized_filename = "unoptimized.txt";
+		unoptimized_filename = "unoptimized.txt";
 	}
 
 	// Create file descriptors
-	mpi_file = fopen(mpi_filename, "w+");
 	omp_file = fopen(omp_filename, "w+");
 	simd_file = fopen(simd_filename, "w+");
-    unoptimized_file = fopen(unoptimized_filename, "w+");
+	unoptimized_file = fopen(unoptimized_filename, "w+");
 
 	// Create the headers for every file
-	fprintf(mpi_file, "matrix_size,\telapsed_time\n");
 	fprintf(omp_file, "matrix_size,\telapsed_time\n");
 	fprintf(simd_file, "matrix_size,\telapsed_time\n");
-    fprintf(unoptimized_file, "matrix_size,\telapsed_time\n");
+	fprintf(unoptimized_file, "matrix_size,\telapsed_time\n");
 
 	// * Debugging prints.  Ignore if not debugging.
 	// printf("\n%s, %s, %s", mpi_filename, omp_filename, simd_filename);
@@ -118,13 +113,6 @@ int main(int argc, char *argv[]) {
 		printf("\nB %s:\n", input_files[1]);
 		print_matrix(matrix_b, N, N);
 
-		// printf("\nRunning MPI...");
-		// if (MPI) {
-		// 	time_matrix(&MPI, output_matrix, matrix_a, matrix_b, &N, start, end);
-		// 	printf("\nResulting Matrix with MPI:\n");
-		// 	print_matrix(output_matrix, N, N);
-		// }
-
 		printf("\nRunning OMP...");
 		if (OMP) {
 			time_matrix(&OMP, output_matrix, matrix_a, matrix_b, &N, start, end);
@@ -139,10 +127,10 @@ int main(int argc, char *argv[]) {
 			print_matrix(output_matrix, N, N);
 		}
 
-		 printf("\nRunning Unoptimized...");
-		 if (UNOPTIMIZED) {
-		 	time_matrix(&UNOPTIMIZED, output_matrix, matrix_a, matrix_b, &N, start, end);
-		 }
+		printf("\nRunning Unoptimized...");
+		if (UNOPTIMIZED) {
+			time_matrix(&UNOPTIMIZED, output_matrix, matrix_a, matrix_b, &N, start, end);
+		}
 
 		free(matrix_a);
 		free(matrix_b);
@@ -155,15 +143,9 @@ int main(int argc, char *argv[]) {
 
 			printf("\n\nCurrent matrix size is now %d", N);
 
-			// printf("\nRunning MPI...");
-			// if (MPI) {
-			// 	record_time(&MPI, &N, time_matrix(&MPI, output_matrix, matrix_a, matrix_b, &N, start, end), mpi_file);
-			// }
-
 			printf("\nRunning OMP...");
 			if (OMP) {
 				record_time(&OMP, &N, time_matrix(&OMP, output_matrix, matrix_a, matrix_b, &N, start, end), omp_file);
-				// time_matrix(&OMP, output_matrix, matrix_a, matrix_b, &N, start, end);
 			}
 
 			printf("\nRunning SIMD...");
@@ -171,10 +153,10 @@ int main(int argc, char *argv[]) {
 				record_time(&SIMD, &N, time_matrix(&SIMD, output_matrix, matrix_a, matrix_b, &N, start, end), simd_file);
 			}
 
-            printf("\nRunning Unoptimized...");
-            if (UNOPTIMIZED) {
-                record_time(&UNOPTIMIZED, &N, time_matrix(&UNOPTIMIZED, output_matrix, matrix_a, matrix_b, &N, start, end), unoptimized_file);
-            }
+			printf("\nRunning Unoptimized...");
+			if (UNOPTIMIZED) {
+				record_time(&UNOPTIMIZED, &N, time_matrix(&UNOPTIMIZED, output_matrix, matrix_a, matrix_b, &N, start, end), unoptimized_file);
+			}
 
 			free(matrix_a);
 			free(matrix_b);
@@ -182,112 +164,6 @@ int main(int argc, char *argv[]) {
 		}
 	}
 
-	// for (int i = 0; i < cur_input_index; i++) {
-	// 	// ! LOOP ALL GIVEN FILES
-
-	// 	// if (MPI) {
-	// 	// 	mmult_mpi();
-	// 	// }
-
-	// 	printf("Running OMP ");
-
-	// 	if (OMP) {
-	// 		clock_gettime(CLOCK_REALTIME, &start);
-	// 		mmult_omp(output_matrix, matrix_a, N, N, matrix_b, N, N);
-	// 		clock_gettime(CLOCK_REALTIME, &end);
-	// 	}
-
-	// 	if (SIMD) {
-	// 		mmult_vectorized(output_matrix, matrix_a, matrix_b, N);
-	// 	}
-
-	// 	if (NONE) {
-	// 		mmult_nonvectorized();
-	// 	}
-	// }
-
-	// getUserSIettings(&SIMD, &IOFile, &OMP);
-
-	// int matrix_size = 1;
-	// double *matrixA, *matrixB, *outputMatrix;
-	// struct timespec start, end;
-
-	// // Create output file or truncate it to length 0 if it exists
-	// FILE* output_fp = fopen("output.txt", "w+");
-
-	// if (IOFile) {
-	// 	char str[100];
-	// 	printf("What is the size of the square matrices: ");
-	// 	fgets(str, 100, stdin);
-	// 	matrix_size = atoi(str);
-
-	// 	printf("Path of first matrix: ");
-	// 	matrixA = getUserMatrix(matrix_size);
-
-	// 	printf("Path of second matrix: ");
-	// 	matrixB = getUserMatrix(matrix_size);
-
-	// 	outputMatrix = malloc(sizeof(double) * matrix_size * matrix_size);
-
-	// 	if (SIMD) {
-	// 		clock_gettime(CLOCK_REALTIME, &start);
-	// 		mmult_vectorized(outputMatrix, matrixA, matrixB, matrix_size);
-	// 		clock_gettime(CLOCK_REALTIME, &end);
-	// 	} else if (OMP) {
-	// 		clock_gettime(CLOCK_REALTIME, &start);
-	// 		mmult_omp(outputMatrix, matrixA, matrix_size, matrix_size, matrixB, matrix_size, matrix_size);
-	// 		clock_gettime(CLOCK_REALTIME, &end);
-	// 	} else {
-	// 		clock_gettime(CLOCK_REALTIME, &start);
-	// 		mmult_nonvectorized(outputMatrix,
-	// 							matrixA, matrix_size, matrix_size,
-	// 							matrixB, matrix_size, matrix_size);
-	// 		clock_gettime(CLOCK_REALTIME, &end);
-	// 	}
-	// 	double elapsed_time = (end.tv_sec - start.tv_sec) + 1.0e-9 * (end.tv_nsec - start.tv_nsec);
-
-	// 	print_matrix(outputMatrix, matrix_size, matrix_size);
-	// 	printf("c^\nsize,time:\n%d,%f\n", matrix_size, elapsed_time);
-	// 	return 0;
-	// }
-
-	// // Create header
-	// fprintf(output_fp, "matrix_size,elapsed_time\n");
-
-	// // Matrix size starts at 2
-	// while (++matrix_size <= 1000) {
-	// 	// Create matrix A, B and an empty output
-	// 	matrixA = gen_matrix(matrix_size, matrix_size);
-	// 	matrixB = gen_matrix(matrix_size, matrix_size);
-	// 	outputMatrix = malloc(sizeof(double) * matrix_size * matrix_size);
-
-	// 	if (SIMD) {
-	// 		clock_gettime(CLOCK_REALTIME, &start);
-	// 		mmult_vectorized(outputMatrix, matrixA, matrixB, matrix_size);
-	// 		clock_gettime(CLOCK_REALTIME, &end);
-	// 	} else if (OMP) {
-	// 		clock_gettime(CLOCK_REALTIME, &start);
-	// 		mmult_omp(outputMatrix, matrixA, matrix_size, matrix_size, matrixB, matrix_size, matrix_size);
-	// 		clock_gettime(CLOCK_REALTIME, &end);
-	// 	} else {
-	// 		clock_gettime(CLOCK_REALTIME, &start);
-	// 		mmult_nonvectorized(outputMatrix,
-	// 							matrixA, matrix_size, matrix_size,
-	// 							matrixB, matrix_size, matrix_size);
-	// 		clock_gettime(CLOCK_REALTIME, &end);
-	// 	}
-
-	// 	double elapsed_time = (end.tv_sec - start.tv_sec) + 1.0e-9 * (end.tv_nsec - start.tv_nsec);
-
-	// 	fprintf(output_fp, "%d,\t%f\n", matrix_size, elapsed_time);
-	// 	printf("\nCompleted matrix size %d with time %f", matrix_size, elapsed_time);
-
-	// 	free(matrixA);
-	// 	free(matrixB);
-	// 	free(outputMatrix);
-	// }
-
-	fclose(mpi_file);
 	fclose(omp_file);
 	fclose(simd_file);
 	printf("\nDone!");
@@ -300,7 +176,6 @@ int main(int argc, char *argv[]) {
  *
  * @param argc
  * @param argv
- * @param MPI
  * @param OMP
  * @param SIMD
  * @param UNOPTIMIZED
@@ -309,13 +184,11 @@ int main(int argc, char *argv[]) {
  * @param input_files
  * @param N
  */
-void interpret_args(int argc, char *argv[], int *MPI, int *OMP, int *SIMD, int *UNOPTIMIZED, int *OTHREE, int *cur_input_index, char *input_files[], int *N) {
+void interpret_args(int argc, char *argv[], int *OMP, int *SIMD, int *UNOPTIMIZED, int *OTHREE, int *cur_input_index, char *input_files[], int *N) {
 	for (int i = 1; i < argc; i++) {
 		// printf("\nargv[%d]: %s", i, argv[i]);
 
-		if (strcmp(argv[i], "MPI") == 0) {
-			*MPI = 1;
-		} else if (strcmp(argv[i], "OMP") == 0) {
+		if (strcmp(argv[i], "OMP") == 0) {
 			*OMP = 2;
 		} else if (strcmp(argv[i], "SIMD") == 0) {
 			*SIMD = 3;
@@ -338,7 +211,7 @@ void interpret_args(int argc, char *argv[], int *MPI, int *OMP, int *SIMD, int *
 /**
  * @brief
  *
- * @param mode 1 = MPI, 2 = OMP, 3 = SIMD, 4 = Unoptimized
+ * @param mode 2 = OMP, 3 = SIMD, 4 = Unoptimized
  * @param output_matrix
  * @param matrix_a
  * @param matrix_b
@@ -351,8 +224,6 @@ double time_matrix(int *mode, double *output_matrix, double *matrix_a, double *m
 	clock_gettime(CLOCK_REALTIME, &start);
 
 	switch (*mode) {
-		case 1:	 // MPI
-			break;
 		case 2:	 // OMP
 			mmult_omp(output_matrix, matrix_a, *N, *N, matrix_b, *N, *N);
 			break;
