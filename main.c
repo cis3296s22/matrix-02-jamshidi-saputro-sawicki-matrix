@@ -88,11 +88,11 @@ int main(int argc, char *argv[]) {
             clock_gettime(CLOCK_REALTIME, &end);
         }
         else{
-                clock_gettime(CLOCK_REALTIME, &start);
-                mmult_nonvectorized(outputMatrix,
+            clock_gettime(CLOCK_REALTIME, &start);
+            mmult_nonvectorized(outputMatrix,
                                     matrixA, matrix_size, matrix_size,
                                     matrixB, matrix_size, matrix_size);
-                clock_gettime(CLOCK_REALTIME, &end);
+            clock_gettime(CLOCK_REALTIME, &end);
         }
         double elapsed_time = (end.tv_sec - start.tv_sec) + 1.0e-9 * (end.tv_nsec - start.tv_nsec);
 
