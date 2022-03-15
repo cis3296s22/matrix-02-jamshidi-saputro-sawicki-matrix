@@ -100,7 +100,7 @@ This project has three different programs:
 * main_mpi (flawed)
 * mmult_mpi
 
-Main MPI handles matrix multiplication using MPI while Main utilizes every other method (OMP, SIMD) for matrix multiplication
+main_mpi handles matrix multiplication through 1000 iterations of increasing matrix size using MPI while main utilizes every other method (OMP, SIMD) for matrix multiplication and mmult_mpi showcases matrix multiplication using MPI of a single user entered matrix size
 
 Syntax:
 
@@ -126,3 +126,6 @@ Syntax:
 	mmult_mpi:
 	mpiexec -np [number of nodes/processes you want to use] ./main_mpi [matrix_size]
 	mpiexec -np 4 ./mmult_mpi 10
+
+# Comparison Graph
+![hello](out.png)
