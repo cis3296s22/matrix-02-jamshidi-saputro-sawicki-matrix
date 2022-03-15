@@ -1,4 +1,4 @@
-PGMS=mmult_omp_timing matrix_times_vector hello test_mmult mxv_omp_mpi mmult_mpi_omp main main_unoptimized main_omp main_mpi
+PGMS=mmult_omp_timing matrix_times_vector hello test_mmult mxv_omp_mpi mmult_mpi_omp main main_unoptimized main_omp main_mpi main_mpi_optimized
 
 all:	${PGMS}
 
