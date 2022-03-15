@@ -112,3 +112,6 @@ Syntax:
 	
 	With Two Files: ./main [matrix1] [matrix2] [matrix_size]
 	./main a.txt b.txt 5
+	
+	mpiexec -np [number of nodes/processes you want to use] ./main_mpi [size]
+	mpiexec -np 4 ./main_mpi 1000
