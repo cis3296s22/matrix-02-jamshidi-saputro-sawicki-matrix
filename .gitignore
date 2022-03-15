@@ -10,3 +10,4 @@ mmult_omp_mpi
 mmult_mpi_omp
 test_mmult
 /.vscode
+vcs.xml

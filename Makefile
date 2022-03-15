@@ -11,6 +11,12 @@ main_unoptimized:		mmult.o main.o mat.c mmult_omp.o
 main_omp:		mmult_omp.o main.o mat.c
 	gcc -o main_omp -fopenmp -O3 mmult_omp.o main.o mat.c
 
+main_mpi_optimized:		main_mpi.o mat.c mmult.o
+	mpicc -o main_mpi_optimized -O3 main_mpi.o mat.c mmult.o
+
+#main_mpi_optimized.o:	main_mpi.c
+#	mpicc -c main_mpi.c
+
 #main_mpi:		mat.o main_mpi.o mmult_omp.o
 #	mpicc -o main_mpi -fopenmp -O3 main_mpi.o mmult_omp.o mat.o
 
