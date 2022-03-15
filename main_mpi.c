@@ -23,6 +23,12 @@ int main(int argc, char* argv[])
     MPI_Comm_size(MPI_COMM_WORLD, &numprocs);
     MPI_Comm_rank(MPI_COMM_WORLD, &myid);
 
+    if (myid == 0){
+        printf("I am the master node");
+    }
+    else{
+        printf("I am a slave node");
+    }
 
     if (argc > 1) {
         matrix_size = atoi(argv[1]);
