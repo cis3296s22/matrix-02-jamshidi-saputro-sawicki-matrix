@@ -15,7 +15,7 @@ void record_time(int *size, double elapsed_time, FILE *file) {
 	fprintf(file, "%d,\t%f\n", *size, elapsed_time);
 }
 
-void MPIThingy(int *myid, double *matrixA, double *matrixB, double *outputMatrix, int matrix_size, double *recv, double *buffer, int *numprocs, MPI_Status *status, FILE *file) {
+double* MPIThingy(int *myid, double *matrixA, double *matrixB, int matrix_size, double *recv, double *buffer, int *numprocs, MPI_Status *status, FILE *file) {
 	if (*myid == 0) {  // MASTER CODE
 		double starttime, endtime;
 
@@ -25,7 +25,7 @@ void MPIThingy(int *myid, double *matrixA, double *matrixB, double *outputMatrix
 		// if (matrixB == NULL)
 		matrixB = gen_matrix(matrix_size, matrix_size);
 
-		outputMatrix = malloc(sizeof(double) * matrix_size * matrix_size);
+		double* outputMatrix = malloc(sizeof(double) * matrix_size * matrix_size);
 		recv = malloc(sizeof(double) * matrix_size);
 
 		int numsent = 0;
@@ -73,6 +73,7 @@ void MPIThingy(int *myid, double *matrixA, double *matrixB, double *outputMatrix
 
 		if (endtime != 0 && file != NULL)
 			record_time(&matrix_size, endtime - starttime, file);
+            return outputMatrix;
 		// return endtime - starttime;
 
 		// compareMatrix = malloc(sizeof(double) * matrix_size * matrix_size);
@@ -169,18 +170,18 @@ int main(int argc, char *argv[]) {
 				print_matrix(matrixB, matrix_size, matrix_size);
 			}
 
-			MPIThingy(&myid, matrixA, matrixB, outputMatrix, matrix_size, recv, buffer, &numprocs, &status, NULL);
+			outputMatrix = MPIThingy(&myid, matrixA, matrixB, matrix_size, recv, buffer, &numprocs, &status, NULL);
 
 			if (myid == 0) {
-				// printf("\nOutput Matrix:\n");
-				// print_matrix(outputMatrix, matrix_size, matrix_size);
+				 printf("\nOutput Matrix:\n");
+				 print_matrix(outputMatrix, matrix_size, matrix_size);
 			}
 		} else {  // ! Generating files from 0 to MAX_N!
 			MAX_N = atoi(argv[1]);
 			while (++matrix_size <= MAX_N) {
 				buffer = malloc(sizeof(double) * matrix_size);
 
-				MPIThingy(&myid, matrixA, matrixB, outputMatrix, matrix_size, recv, buffer, &numprocs, &status, mpi_file);
+				outputMatrix = MPIThingy(&myid, matrixA, matrixB, matrix_size, recv, buffer, &numprocs, &status, mpi_file);
 
 				// matrix_size = atoi(argv[1]);
 			}
