@@ -1,24 +1,74 @@
 # Distributed Parallel Computing
-The architecture of the solution we created consists of a main.c file that has the capabilities to multiply two given matrices via txt file, as well as the ability to multiply matrices from sizes 1-1000 and automatically output the results to a graph. Along with the normal way of multiplying matrices, we are able to multiply the matrices using SIMD, OMP, and MPI separately. This is done by having each separate way of multiplying the matrices either in their own files or functions to be called by main. 
+The architecture of the solution we created consists of a main.c file that has the capabilities to multiply two given matrices via txt file, as well as the ability to multiply matrices from sizes 1-1000 and automatically output the results to a graph. Along with the normal way of multiplying matrices, we are able to multiply the matrices using SIMD, OMP, and MPI separately. This is done by having each separate way of multiplying the matrices either in their own files or functions to be called by main. The one exception to this is that the MPI algorithm's variation is run in its own main function, in a file called main_mpi.  
 
-We implemented 4 different types of algorithms, normal mmult, vectorized mmult (SIMD), OMP mmult, and MPI mmult. Normal mmult(shown in Figure 1 in Graphs & Code) is the approach a normal programmer would take to create a matrix multiplication algorithm; it goes through a triple nested for loop that multiplies different values together. It first sets the value in the output matrix that it is computing to zero and then adds up the multiplied values of the first two matrices to create a single value for the output matrix multiple times until the output matrix is completed
+We implemented 4 different types of algorithms, normal mmult, vectorized mmult (SIMD), OMP mmult, and MPI mmult. Normal mmult(shown below) is the approach a normal programmer would take to create a matrix multiplication algorithm; it goes through a triple nested for loop that multiplies different values together. It first sets the value in the output matrix that it is computing to zero and then adds up the multiplied values of the first two matrices to create a single value for the output matrix multiple times until the output matrix is completed
+
+	Normal mmult:
+	
+	for (i = 0; i < aRows; i++){
+		for (j = 0; j < bCols; j++) {
+			c[i * bCols + j] = 0;
+
+			for (k = 0; k < aRows; k++){
+				c[i * bCols + j] += a[i * aRows + k] * b[k * bCols + j];
+			}
+		}
+	}
 
 <p align="center">
 <b>MPI</b>
 </p>
-<p>MPI mmult is implemented by using the Wolfgand cluster provided for us, it uses the different nodes in the cluster as different processes that can each do different actions. The basis of MPI(shown in Figure 4 in Graphs & Code) is shown by clarifying your master process and your slave processes. We then use the master process to send each slave process a row of data from a matrix to perform matrix multiplication on. Therefore, we can send different rows to different slave processes from the master process and compute faster than if we only had one process. The slaves then send back the computed data to the master process to be combined into one final output matrix.</p>
+<p>MPI mmult is implemented by using the Wolfgand cluster provided for us, it uses the different nodes in the cluster as different processes that can each do different actions. The basis of MPI(shown below) is shown by clarifying your master process and your slave processes. We then use the master process to send each slave process a row of data from a matrix to perform matrix multiplication on. Therefore, we can send different rows to different slave processes from the master process and compute faster than if we only had one process. The slaves then send back the computed data to the master process to be combined into one final output matrix.</p>
+	
+	MPI Basics:
+	
+	MPI_Init(&argc, &argv);
+	MPI_Comm_size(MPI_COMM_WORLD, &numprocs);
+	MPI_Comm_rank(MPI_COMM_WORLD, &myid);
+	
+	if (myid == 0){
+		printf("I am the master node");
+	}
+	else{
+		printf("I am a slave node");
+	}
 
 <p align="center">
 <b>OMP</b>
 </p>
-<p>OMP mmult(shown in Figure 3 in Graphs & Code) is a method to use multi-threading with a level of abstraction to try and make multi-threading easier. This is done by using the “#pragma” directive. In our case, we said “shared(a, b, c, aRows, aCols, bRows, bCols)” to let OMP know that we want these variables to be shared between threads. As well as “private(i, k, j)” to tell OMP that we want these to be local variables per thread. Along with “#pragma omp parallel” to initialize a parallel region, then “#pragma omp for” to let OMP know that we want the multi-threading region to be within the for loop. Then it will take care of the mult-threading part for you as it does the mmult algorithm.</p>
+<p>OMP mmult(shown below) is a method to use multi-threading with a level of abstraction to try and make multi-threading easier. This is done by using the “#pragma” directive. In our case, we said “shared(a, b, c, aRows, aCols, bRows, bCols)” to let OMP know that we want these variables to be shared between threads. As well as “private(i, k, j)” to tell OMP that we want these to be local variables per thread. Along with “#pragma omp parallel” to initialize a parallel region, then “#pragma omp for” to let OMP know that we want the multi-threading region to be within the for loop. Then it will take care of the mult-threading part for you as it does the mmult algorithm.</p>
 
+	OMP mmult:
+	
+	#pragma omp parallel default(none) shared(a, b, c, aRows, aCols, bRows, bCols) private(i, k, j)
+	#pragma omp for
+	for (i = 0; i < aRows; i++) {
+		for (j = 0; j < bCols; j++)
+			c[i * bCols + j] = 0;
+            
+		for (k = 0; k < aCols; k++)
+			for (j = 0; j < bCols; j++)
+				c[i * bCols + j] += a[i * aCols + k] * b[k * bCols + j];
+	}
 
 <p align="center">
 <b>SIMD</b>
 </p>
-<p>Vectorized mmult(shown in Figure 2 in Graphs & Code) using SIMD is implemented by having the concept of locality in mind. This algorithm also uses a triple nested for loop but it first goes through the output matrix and sets each value to zero, then it will multiply values from the other matrices with values that are closer to each other within the physical machine. Since the values are closer together (locality), the machine computes this algorithm faster than if we were to use normal mmult.</p>
+<p>Vectorized mmult(shown below) using SIMD is implemented by having the concept of locality in mind. This algorithm also uses a triple nested for loop but it first goes through the output matrix and sets each value to zero, then it will multiply values from the other matrices with values that are closer to each other within the physical machine. Since the values are closer together (locality), the machine computes this algorithm faster than if we were to use normal mmult.</p>
 
+	SIMD mmult:
+	
+	for (i = 0; i < N; i++) {
+		for (j = 0; j < N; j++){
+			c[i * N + j] = 0;
+		}
+		
+		for (k = 0; k < N; k++){
+			for (l = 0; l < N; l++){
+				c[i * N + l] += a[i * N + k] * b[k * N + l];
+			}	
+		}
+	}
 
 # Teamwork
 ### Alex
@@ -29,6 +79,7 @@ Automated running the matrix multiplication on different size matrices by creati
 
 ### Chris
 Helped write the “What is SIMD, OMP, MPI?” discussion question. Helped with running the matrix multiplication without SIMD and recorded the results. Helped with running the matrix multiplication without SIMD and recorded the results. Produced the graph in excel with all of the results compiled together. Updated main to allow user to specify which variation of the mmult algorithm they would like to use. Created and answered all the questions in the design document.
+
 We locked the master branch as shown in HW 2, whenever we had finished a week’s worth of tasks, we would create a pull request to merge the current week’s branch with the master branch. Then we would let the other team members know that a pull request was created and then the other team members would review the pull request then write a review and approve the request. 
 
 # Full Project Life Cycle
@@ -45,8 +96,8 @@ The proportion of time and tasks dedicated to writing variations of mmult and te
 
 # Usage
 This project has two different programs:  
-* Main
-* Main_MPI
+* main
+* main_mpi
 
 Main MPI handles matrix multiplication using MPI while Main utilizes every other method (OMP, SIMD) for matrix multiplication
 
@@ -59,5 +110,5 @@ Syntax:
 	./main O3 MPI OMP SIMD
 	./main O3 MPI OMP SIMD UNOPTIMIZED
 	
-	With Two Files:
+	With Two Files: ./main [matrix1] [matrix2] [matrix_size]
 	./main a.txt b.txt 5
