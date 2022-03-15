@@ -75,7 +75,7 @@ int main(int argc, char *argv[]) {
 	if (OTHREE) {
 		omp_filename = "O3_omp.txt";
 		simd_filename = "O3_simd.txt";
-		unoptimized_filename = "03_unoptimized.txt";
+		unoptimized_filename = "O3_unoptimized.txt";
 	} else {
 		omp_filename = "omp.txt";
 		simd_filename = "simd.txt";
