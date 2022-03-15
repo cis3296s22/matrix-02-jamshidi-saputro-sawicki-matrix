@@ -5,78 +5,118 @@
 #include "mat.h"
 #include "/usr/include/mpich/mpi.h"
 
-int main(int argc, char *argv[]) {
-	MPI_Status status;	// MPI Status container
+int min(int a, int b){
+    return a > b ? b : a;
+}
 
-	int matrix_size = 5;
-	int process_id;		// Set from mpiexec
-	int process_count;	// Set when running mpiexec, e.g. mpiexec -n 4
-	int slave_count;	// Determines the amount of slave processes we have.  = process_count - 1
-	int rows;			// Determines the number of rows of a matrix that is sent to a slave process
-	int offset;			// Determines the starting point of the row which is sent to a slave process
-	int source;
-	int destination;  // Determines the destination slave process ID with bonds of [1, slave_count]
-	double *matrixA, *matrixB, *output_matrix;
+int main(int argc, char* argv[])
+{
+    int matrix_size; // nrows & ncols
+    double *matrixA, *matrixB, *outputMatrix, *compareMatrix, *buffer, *recv;
+    int myid, numprocs;
+    double starttime, endtime;
+    MPI_Status status;
 
-	MPI_Init(&argc, &argv);
-	MPI_Comm_size(MPI_COMM_WORLD, &process_count);
-	MPI_Comm_rank(MPI_COMM_WORLD, &process_id);
+    /* insert other global variables here */
 
-	slave_count = process_count - 1;
+    MPI_Init(&argc, &argv);
+    MPI_Comm_size(MPI_COMM_WORLD, &numprocs);
+    MPI_Comm_rank(MPI_COMM_WORLD, &myid);
 
-	// printf("procs: %d and id: %d\n", process_count, process_id);
 
-	if (process_id == 0) {	// Parent/Master/Controller process
-		// Create matrices
-		matrixA = gen_matrix(matrix_size, matrix_size);
-		matrixB = gen_matrix(matrix_size, matrix_size);
-		output_matrix = malloc(sizeof(double) * matrix_size * matrix_size);
+    if (argc > 1) {
+        matrix_size = atoi(argv[1]);
+        buffer = malloc(sizeof(double) * matrix_size);
 
-		rows = matrix_size / slave_count;  // ! Determine number of rows of the Matrix A, that is sent to each slave process
-		offset = 0;						   // ! Offset variable determines the starting point of the row which sent to slave process
+        if (myid == 0) {
+            // MASTER CODE
 
-		// ! Calculation details are assigned to slave tasks. Process 1 onwards; Each message's tag is 1
-		for (destination = 1; destination <= slave_count; destination++) {
-			MPI_Send(&offset, 1, MPI_INT, destination, 1, MPI_COMM_WORLD);											   // ! Acknowledging the offset of the Matrix A
-			MPI_Send(&rows, 1, MPI_INT, destination, 1, MPI_COMM_WORLD);											   // ! Acknowledging the number of rows
-			MPI_Send(&matrixA[offset * matrix_size], rows * matrix_size, MPI_DOUBLE, destination, 1, MPI_COMM_WORLD);  // ! Send rows of the Matrix A which will be assigned to slave process to compute
-			MPI_Send(&matrixB, matrix_size * matrix_size, MPI_DOUBLE, destination, 1, MPI_COMM_WORLD);				   // ! Offset is modified according to number of rows sent to each process
+            matrixA = gen_matrix(matrix_size, matrix_size);
+            matrixB = gen_matrix(matrix_size, matrix_size);
+            outputMatrix = malloc(sizeof(double) * matrix_size * matrix_size);
+            recv = malloc(sizeof(double) * matrix_size);
 
-			offset += rows;
-		}
+            int numsent = 0;
+            int sender, row;
 
-		for (int i = 1; i <= slave_count; i++) {
-			source = i;
+            starttime = MPI_Wtime();
 
-			MPI_Recv(&offset, 1, MPI_INT, source, 2, MPI_COMM_WORLD, &status);
-			MPI_Recv(&rows, 1, MPI_INT, source, 2, MPI_COMM_WORLD, &status);
-			MPI_Recv(&output_matrix[offset * matrix_size], rows * matrix_size, MPI_DOUBLE, source, 2, MPI_COMM_WORLD, &status);
-		}
+            // send all slaves matrixB (in the slides given, b was a vector but since we are multiplying by a matrix we have to give the entire matrixB)
+            MPI_Bcast(matrixB, matrix_size * matrix_size, MPI_DOUBLE, 0, MPI_COMM_WORLD);
+            for (int i = 0; i < min(numprocs - 1, matrix_size); i++){ // for each slave process or for the amount of rows
+                for (int j = 0; j < matrix_size; j++){
+                    buffer[j] = matrixA[i * matrix_size + j];
+                }
+                // send each slave process a row from matrixA (stored in buffer)
+                MPI_Send(buffer, matrix_size, MPI_DOUBLE, i + 1, i + 1, MPI_COMM_WORLD); // i + 1 because slave processes start at 1
+                numsent++;
+            }
 
-		// Print the result matrix
-		printf("\nResult Matrix C = Matrix A * Matrix B:\n\n");
-		// print_matrix(output_matrix, matrix_size, matrix_size);
-		
-	} else {		 // Child/Slave process
-		source = 0;	 // ! Source process ID is defined
+            for (int i = 0; i < matrix_size; i++) {
+                // recv is a row with the answers filled in
+                MPI_Recv(recv, matrix_size, MPI_DOUBLE, MPI_ANY_SOURCE, MPI_ANY_TAG, MPI_COMM_WORLD, &status);
+                sender = status.MPI_SOURCE;
+                row = status.MPI_TAG;
 
-		MPI_Recv(&offset, 1, MPI_INT, source, 1, MPI_COMM_WORLD, &status);
-		MPI_Recv(&rows, 1, MPI_INT, source, 1, MPI_COMM_WORLD, &status);
-		MPI_Recv(&matrixA, rows * matrix_size, MPI_DOUBLE, source, 1, MPI_COMM_WORLD, &status);
-		MPI_Recv(&matrixB, matrix_size * matrix_size, MPI_DOUBLE, source, 1, MPI_COMM_WORLD, &status);
+                // input the answers to the outputMatrix based on the specific row(given by Recv)
+                for (int j = 0; j < matrix_size; j++) {
+                    outputMatrix[((row - 1) * matrix_size) + j] = recv[j];
+                }
 
-		// !Multiplied vectors get sent back to the controller process
-		MPI_Send(&offset, 1, MPI_INT, 0, 2, MPI_COMM_WORLD);							 // !Offset will be sent to Root, which determines the starting point of the calculated value in matrix C
-		MPI_Send(&rows, 1, MPI_INT, 0, 2, MPI_COMM_WORLD);								 // ! Number of rows the process calculated will be sent to root process
-		MPI_Send(&output_matrix, rows * matrix_size, MPI_DOUBLE, 0, 2, MPI_COMM_WORLD);	 // !Resulting matrix with calculated rows will be sent to root process
-	}
+                if (numsent < matrix_size) {
+                    // if there are more matrix rows in matrixA than the number of rows sent then we will send a new row after a slave process is done computing it's row
+                    for (int j = 0; j < matrix_size; j++) {
+                        buffer[j] = matrixA[numsent * matrix_size + j];
+                    }
 
-	// printf("\nMatrix A:\n");
-	// print_matrix(matrixA, matrix_size, matrix_size);
+                    MPI_Send(buffer, matrix_size, MPI_DOUBLE, sender, numsent + 1, MPI_COMM_WORLD);
+                    numsent++;
+                } else {
+                    // if there are no more rows to send then tell the slave processes to stop
+                    MPI_Send(MPI_BOTTOM, 0, MPI_DOUBLE, sender, 0, MPI_COMM_WORLD);
+                }
+            }
+            endtime = MPI_Wtime();
 
-	// printf("\n\nMatrix B:\n");
-	// print_matrix(matrixB, matrix_size, matrix_size);
 
-	MPI_Finalize();
-	return 0;
+            printf("time: %f\n",(endtime - starttime));
+            compareMatrix  = malloc(sizeof(double) * matrix_size * matrix_size);
+            mmult_nonvectorized(compareMatrix, matrixA, matrix_size, matrix_size, matrixB, matrix_size, matrix_size);
+            print_matrix(compareMatrix, matrix_size, matrix_size);
+            printf("^compare\n\n");
+            print_matrix(outputMatrix, matrix_size, matrix_size);
+            printf("^output\n\n");
+            compare_matrices(compareMatrix, outputMatrix, matrix_size, matrix_size);
+        } else {
+            // SLAVE CODE
+
+            // Bcast will give us the values for matrixB
+            matrixB = malloc(sizeof(double) * matrix_size * matrix_size);
+            MPI_Bcast(matrixB, matrix_size * matrix_size, MPI_DOUBLE, 0, MPI_COMM_WORLD);
+            if (myid <= matrix_size){ // if we have more processes than the size of the matrix then we don't want those to use those processes
+                while (1){
+
+                    // buffer holds a row from matrixA
+                    MPI_Recv(buffer, matrix_size, MPI_DOUBLE, 0, MPI_ANY_TAG, MPI_COMM_WORLD, &status);
+                    if (status.MPI_TAG == 0){ // MPI_TAG will be 0 when we want to stop doing matrix multiplication
+                        break;
+                    }
+                    int row = status.MPI_TAG;
+                    double *ans = malloc(sizeof(double) * matrix_size);
+
+                    // compute the answer by multiplying the row given from buffer by the matrixB column then send the answer back
+                    for (int i = 0; i < matrix_size; i++){
+                        for (int j = 0; j < matrix_size; j++){
+                            ans[i] +=  buffer[j] * matrixB[j * matrix_size + i];
+                        }
+                    }
+                    MPI_Send(ans, matrix_size, MPI_DOUBLE, 0, row, MPI_COMM_WORLD);
+                }
+            }
+        }
+    } else {
+        fprintf(stderr, "Usage matrix_times_vector <size>\n");
+    }
+    MPI_Finalize();
+    return 0;
 }
