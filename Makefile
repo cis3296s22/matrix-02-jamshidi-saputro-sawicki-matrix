@@ -14,6 +14,14 @@ main_omp:		mmult_omp.o main.o mat.c
 main_mpi_optimized:		main_mpi.o mat.c mmult.o
 	mpicc -o main_mpi_optimized -O3 main_mpi.o mat.c mmult.o
 
+#new
+mmult_mpi:		mmult_mpi.o mat.c mmult.o
+	mpicc -o mmult_mpi -O3 mmult_mpi.o mat.c mmult.o
+
+mmult_mpi.o:	mmult_mpi.c
+	mpicc -c mmult_mpi.c
+#new
+
 #main_mpi_optimized.o:	main_mpi.c
 #	mpicc -c main_mpi.c
 
